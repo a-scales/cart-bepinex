@@ -325,12 +325,56 @@ namespace BecomeCart
         }
 
         /// <summary>
+        /// Checks if there are other players in the room
+        /// </summary>
+        private bool AreOtherPlayersInRoom()
+        {
+            try
+            {
+                // Try to access PhotonNetwork.CurrentRoom via reflection
+                PropertyInfo currentRoomProperty = _photonNetworkType?.GetProperty("CurrentRoom", 
+                    BindingFlags.Public | BindingFlags.Static);
+                
+                if (currentRoomProperty != null)
+                {
+                    object room = currentRoomProperty.GetValue(null);
+                    if (room != null)
+                    {
+                        // Get the player count
+                        PropertyInfo playerCountProperty = room.GetType().GetProperty("PlayerCount");
+                        if (playerCountProperty != null)
+                        {
+                            int playerCount = (int)playerCountProperty.GetValue(room);
+                            return playerCount > 1; // More than just the local player
+                        }
+                    }
+                }
+                
+                // Fallback: Check PlayerTracker for other players
+                int trackedPlayers = PlayerTracker.Instance.GetAllPlayers().Count;
+                return trackedPlayers > 1;
+            }
+            catch (Exception ex)
+            {
+                Plugin.Logger.LogWarning($"Error checking for other players: {ex.Message}");
+                return false; // Assume no other players on error
+            }
+        }
+
+        /// <summary>
         /// Sends a player-cart swap event to other players
         /// </summary>
         public void SendPlayerCartSwap(GameObject playerObject, GameObject cartObject)
         {
             try
             {
+                // Check if there are other players to send to
+                if (!AreOtherPlayersInRoom())
+                {
+                    Plugin.Logger.LogInfo("No other players in room, skipping network event for cart swap");
+                    return;
+                }
+                
                 int playerActorNumber = PlayerTracker.Instance.GetPlayerActorNumber(playerObject);
                 string cartPath = Debugging.GetGameObjectPath(cartObject);
                 
@@ -361,6 +405,13 @@ namespace BecomeCart
         {
             try
             {
+                // Check if there are other players to send to
+                if (!AreOtherPlayersInRoom())
+                {
+                    Plugin.Logger.LogInfo("No other players in room, skipping network event for cart restore");
+                    return;
+                }
+                
                 int playerActorNumber = PlayerTracker.Instance.GetPlayerActorNumber(playerObject);
                 
                 if (playerActorNumber == -1)
@@ -390,32 +441,59 @@ namespace BecomeCart
         {
             if (_raiseEventMethod == null)
             {
-                Plugin.Logger.LogError("Cannot send Photon event: RaiseEvent method not found");
+                Plugin.Logger.LogWarning("Cannot send Photon event: RaiseEvent method not found");
                 return;
             }
             
             try
             {
-                // Create necessary parameters for RaiseEvent
-                // RaiseEvent(byte eventCode, object eventContent, RaiseEventOptions raiseEventOptions, SendOptions sendOptions)
-                
-                // Create RaiseEventOptions with Receivers = Others
-                Type raiseEventOptionsType = Type.GetType("ExitGames.Client.Photon.Hashtable, Photon.Realtime");
-                if (raiseEventOptionsType == null)
-                {
-                    foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-                    {
-                        var type = assembly.GetType("ExitGames.Client.Photon.Hashtable") ?? 
-                                   assembly.GetType("Photon.Realtime.RaiseEventOptions");
-                        if (type != null)
-                        {
-                            raiseEventOptionsType = type;
-                            break;
+                // Check if Photon is connected first
+                bool isConnected = false;
+                try {
+                    // Try to access PhotonNetwork.IsConnected via reflection
+                    PropertyInfo isConnectedProperty = _photonNetworkType?.GetProperty("IsConnected", 
+                        BindingFlags.Public | BindingFlags.Static);
+                    
+                    if (isConnectedProperty != null) {
+                        isConnected = (bool)isConnectedProperty.GetValue(null);
+                        if (!isConnected) {
+                            Plugin.Logger.LogWarning("Cannot send Photon event: Not connected to Photon network");
+                            return;
                         }
                     }
                 }
+                catch (Exception ex) {
+                    Plugin.Logger.LogWarning($"Could not determine Photon connection state: {ex.Message}");
+                    // Continue anyway, as we might still be able to send the event
+                }
                 
+                // Create necessary parameters for RaiseEvent
+                // RaiseEvent(byte eventCode, object eventContent, RaiseEventOptions raiseEventOptions, SendOptions sendOptions)
+                
+                // Find RaiseEventOptions type
+                Type raiseEventOptionsType = null;
+                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    var type = assembly.GetType("Photon.Realtime.RaiseEventOptions") ?? 
+                               assembly.GetType("ExitGames.Client.Photon.RaiseEventOptions");
+                    if (type != null)
+                    {
+                        raiseEventOptionsType = type;
+                        break;
+                    }
+                }
+                
+                if (raiseEventOptionsType == null) {
+                    Plugin.Logger.LogWarning("Cannot send Photon event: RaiseEventOptions type not found");
+                    return;
+                }
+                
+                // Create RaiseEventOptions with Receivers = Others
                 object raiseEventOptions = Activator.CreateInstance(raiseEventOptionsType);
+                if (raiseEventOptions == null) {
+                    Plugin.Logger.LogWarning("Cannot send Photon event: Failed to create RaiseEventOptions instance");
+                    return;
+                }
                 
                 // Set Receivers = Others
                 // First find the ReceiverGroup enum
@@ -431,14 +509,22 @@ namespace BecomeCart
                     }
                 }
                 
-                if (receiverGroupType != null)
-                {
-                    // Get the Others value from the enum
-                    object othersValue = Enum.Parse(receiverGroupType, "Others");
-                    
-                    // Set the Receivers property
-                    raiseEventOptionsType.GetProperty("Receivers").SetValue(raiseEventOptions, othersValue);
+                if (receiverGroupType == null) {
+                    Plugin.Logger.LogWarning("Cannot send Photon event: ReceiverGroup type not found");
+                    return;
                 }
+                
+                // Get the Others value from the enum
+                object othersValue = Enum.Parse(receiverGroupType, "Others");
+                
+                // Set the Receivers property
+                PropertyInfo receiversProperty = raiseEventOptionsType.GetProperty("Receivers");
+                if (receiversProperty == null) {
+                    Plugin.Logger.LogWarning("Cannot send Photon event: Receivers property not found on RaiseEventOptions");
+                    return;
+                }
+                
+                receiversProperty.SetValue(raiseEventOptions, othersValue);
                 
                 // Create SendOptions with Reliability = true
                 Type sendOptionsType = null;
@@ -453,14 +539,30 @@ namespace BecomeCart
                     }
                 }
                 
-                object sendOptions = sendOptionsType.GetProperty("SendReliable", BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
+                if (sendOptionsType == null) {
+                    Plugin.Logger.LogWarning("Cannot send Photon event: SendOptions type not found");
+                    return;
+                }
+                
+                PropertyInfo sendReliableProperty = sendOptionsType.GetProperty("SendReliable", BindingFlags.Public | BindingFlags.Static);
+                if (sendReliableProperty == null) {
+                    Plugin.Logger.LogWarning("Cannot send Photon event: SendReliable property not found on SendOptions");
+                    return;
+                }
+                
+                object sendOptions = sendReliableProperty.GetValue(null);
+                if (sendOptions == null) {
+                    Plugin.Logger.LogWarning("Cannot send Photon event: Failed to get SendReliable value");
+                    return;
+                }
                 
                 // Call RaiseEvent
                 _raiseEventMethod.Invoke(null, new object[] { eventCode, eventContent, raiseEventOptions, sendOptions });
+                Plugin.Logger.LogInfo($"Successfully sent Photon event {eventCode}");
             }
             catch (Exception ex)
             {
-                Plugin.Logger.LogError($"Error sending Photon event: {ex.Message}\n{ex.StackTrace}");
+                Plugin.Logger.LogError($"Error sending Photon event: {ex.Message}");
             }
         }
 
@@ -471,6 +573,13 @@ namespace BecomeCart
         {
             if (cartObject == null)
                 return;
+            
+            // Check if Photon is even available before attempting ownership transfer
+            if (_photonNetworkType == null || _localPlayerProperty == null)
+            {
+                Plugin.Logger.LogInfo("Cannot transfer cart ownership: Photon references not initialized");
+                return;
+            }
                 
             try
             {
@@ -490,12 +599,52 @@ namespace BecomeCart
                             {
                                 int localActorNumber = (int)localPlayer.GetType().GetProperty("ActorNumber").GetValue(localPlayer);
                                 
+                                // Check if we already own it to avoid unnecessary transfers
+                                bool alreadyOwned = false;
+                                try 
+                                {
+                                    PropertyInfo ownerProperty = photonView.GetType().GetProperty("Owner");
+                                    if (ownerProperty != null)
+                                    {
+                                        object owner = ownerProperty.GetValue(photonView);
+                                        PropertyInfo ownerActorProperty = owner?.GetType().GetProperty("ActorNumber");
+                                        if (ownerActorProperty != null)
+                                        {
+                                            int ownerActorNumber = (int)ownerActorProperty.GetValue(owner);
+                                            alreadyOwned = (ownerActorNumber == localActorNumber);
+                                            
+                                            if (alreadyOwned)
+                                            {
+                                                Plugin.Logger.LogInfo("Cart already owned by local player, no need to transfer");
+                                                return;
+                                            }
+                                        }
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    Plugin.Logger.LogWarning($"Could not check ownership: {ex.Message}");
+                                    // Continue with transfer attempt
+                                }
+                                
                                 // Transfer ownership
                                 transferMethod.Invoke(photonView, new object[] { localActorNumber });
                                 Plugin.Logger.LogInfo($"Transferred ownership of cart to local player (Actor: {localActorNumber})");
                             }
+                            else
+                            {
+                                Plugin.Logger.LogWarning("Cannot transfer cart ownership: Local player reference is null");
+                            }
                         }
                     }
+                    else
+                    {
+                        Plugin.Logger.LogWarning("Cannot transfer cart ownership: TransferOwnership method not found");
+                    }
+                }
+                else
+                {
+                    Plugin.Logger.LogInfo("Cart has no PhotonView component, ownership transfer not needed");
                 }
             }
             catch (Exception ex)
