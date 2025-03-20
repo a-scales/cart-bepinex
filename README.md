@@ -19,11 +19,19 @@ The newest feature lets you actually become a cart:
   - Switches to third-person camera view to see yourself as a cart!
   - Properly positions the cart model to match player movement
   - Includes detailed debugging information to verify everything works
+  - **NEW**: Player is made immune to damage while in cart form
+  - **NEW**: Improved vehicle-like WASD/Arrow controls with turning and physics
 
 - Press **F4** to restore your normal player model
   - Removes the cart model and restores your regular appearance
   - Switches back to your original first-person view
   - Maintains your position and orientation
+  - Restores normal damage vulnerability
+
+- Press **F5** to toggle visibility of your player model while in cart form
+  - Useful for debugging to see both your player and the cart simultaneously
+  - Helps visualize how the cart movement works
+  - Toggle between hidden (normal gameplay) and visible (debug mode)
 
 For best results, use F9 to find carts first before attempting to become one!
 
