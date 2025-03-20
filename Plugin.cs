@@ -29,16 +29,9 @@ namespace BecomeCart
             {
                 Harmony.PatchAll();
                 Logger.LogInfo($"Plugin BecomeCart is loaded!");
-                Logger.LogInfo("Press F9 to find and dump cart details to cart_details.md");
-                Logger.LogInfo("Press F10 to dump cart details of previously found cart");
-                Logger.LogInfo("Press F11 to find players and track them");
-                Logger.LogInfo("Press F12 to dump player details to player_details.md");
                 Logger.LogInfo("Press F3 to swap the player model with a cart model");
                 Logger.LogInfo("Press F4 to restore the player model back from cart form");
                 Logger.LogInfo("Press F5 to toggle player model visibility");
-                
-                // Try to find players on startup
-                FindAndTrackAllPlayers();
             }
             catch (Exception ex)
             {
@@ -51,30 +44,6 @@ namespace BecomeCart
             // Handle key presses
             try
             {
-                // Check for F9: Find carts
-                if (Input.GetKeyDown(KeyCode.F9))
-                {
-                    ProcessDumpCartDetails(true);
-                }
-                
-                // Check for F10: Dump cart details
-                if (Input.GetKeyDown(KeyCode.F10))
-                {
-                    ProcessDumpCartDetails(false);
-                }
-                
-                // Check for F11: Find players
-                if (Input.GetKeyDown(KeyCode.F11))
-                {
-                    FindAndTrackAllPlayers();
-                }
-                
-                // Check for F12: Dump player details
-                if (Input.GetKeyDown(KeyCode.F12))
-                {
-                    DumpPlayerHealthInfo();
-                }
-                
                 // Check for F3: Swap player model with cart
                 if (Input.GetKeyDown(KeyCode.F3))
                 {
