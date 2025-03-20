@@ -5,6 +5,7 @@ using UnityEngine;
 using System;
 using System.Reflection;
 using System.Linq;
+using System.Collections;
 
 namespace BecomeCart;
 
@@ -130,61 +131,94 @@ public class Plugin : BaseUnityPlugin
             Logger.LogInfo($"Found {buttonComponents.Length} Button components");
         }
         
-        // F9: Find and track cart objects
+        // F9: Find the Item Cart Medium and apply ALL modifications at once
         if (Input.GetKeyDown(KeyCode.F9))
         {
-            Logger.LogInfo("=== LOOKING FOR CART OBJECTS ===");
+            Logger.LogInfo("=== FINDING ITEM CART MEDIUM AND APPLYING ALL MODS ===");
             
-            // Look for objects with "cart" in the name
-            GameObject[] allObjects = GameObject.FindObjectsOfType<GameObject>();
-            var cartObjects = allObjects
-                .Where(obj => obj.name.ToLower().Contains("cart") || 
-                             obj.name.ToLower().Contains("vehicle") ||
-                             obj.name.ToLower().Contains("transport"))
+            // Look specifically for "Item Cart Medium" objects
+            var cartObjects = GameObject.FindObjectsOfType<GameObject>()
+                .Where(obj => obj.name.Contains("Item Cart Medium"))
                 .ToArray();
-            
-            Logger.LogInfo($"Found {cartObjects.Length} potential cart objects");
-            
-            // Clear previous tracking
-            CartTracker.Instance.StopTrackingAll();
-            
-            foreach (var cartObj in cartObjects)
+                
+            if (cartObjects.Length > 0)
             {
-                string path = Debugging.GetGameObjectPath(cartObj);
-                Logger.LogInfo($"Potential cart: {path}");
+                GameObject cart = cartObjects[0];
+                Logger.LogInfo($"Found cart: {Debugging.GetGameObjectPath(cart)}");
                 
-                // Log position and rotation for later verification
-                Logger.LogInfo($"  Position: {cartObj.transform.position}");
-                Logger.LogInfo($"  Rotation: {cartObj.transform.rotation.eulerAngles}");
+                // Find the PhysGrabCart component
+                var physGrabCart = cart.GetComponent<MonoBehaviour>();
+                foreach (var component in cart.GetComponents<MonoBehaviour>())
+                {
+                    if (component.GetType().Name == "PhysGrabCart")
+                    {
+                        physGrabCart = component;
+                        break;
+                    }
+                }
                 
-                // Dump components to see what makes this cart work
-                DumpGameObject(cartObj);
-                
-                // Start tracking this object
-                CartTracker.Instance.TrackObject(cartObj);
+                if (physGrabCart != null)
+                {
+                    // Dump its fields to the console
+                    Debugging.DumpFields(physGrabCart);
+                    
+                    // Register it for modifications
+                    CartPatch.RegisterCartComponent(physGrabCart, cart);
+                    
+                    // Apply all modifications at once
+                    Logger.LogInfo("APPLYING ALL MODIFICATIONS AT ONCE!");
+                    
+                    // Boost speed
+                    CartPatch.BoostMultiplier = 5.0f;
+                    CartPatch.BoostAllCarts();
+                    
+                    // Enable fun modes
+                    CartPatch.ZeroGravityMode = true;
+                    CartPatch.ToggleZeroGravity();
+                    
+                    Logger.LogInfo("All modifications applied! Cart is ready to go!");
+                }
+                else
+                {
+                    Logger.LogInfo("Could not find PhysGrabCart component on Item Cart Medium.");
+                }
             }
-            
-            // Also look for MonoBehaviours that might control carts
-            var cartControllers = GameObject.FindObjectsOfType<MonoBehaviour>()
-                .Where(mb => mb.GetType().Name.ToLower().Contains("cart") ||
-                            mb.GetType().Name.ToLower().Contains("vehicle") ||
-                            mb.GetType().Name.ToLower().Contains("driv"))
-                .ToArray();
-            
-            Logger.LogInfo($"Found {cartControllers.Length} potential cart controller scripts");
-            
-            foreach (var controller in cartControllers)
+            else
             {
-                Logger.LogInfo($"Potential controller: {controller.GetType().Name} on {Debugging.GetGameObjectPath(controller.gameObject)}");
-                // Log fields to understand the controller's properties
-                Debugging.DumpFields(controller);
+                // Direct approach - just look for any PhysGrabCart components
+                var physGrabCarts = GameObject.FindObjectsOfType<MonoBehaviour>()
+                    .Where(mb => mb.GetType().Name == "PhysGrabCart")
+                    .ToArray();
                 
-                // Also track the GameObject this component is attached to
-                CartTracker.Instance.TrackObject(controller.gameObject);
+                if (physGrabCarts.Length > 0)
+                {
+                    var physGrabCart = physGrabCarts[0];
+                    Logger.LogInfo($"Found PhysGrabCart on: {Debugging.GetGameObjectPath(physGrabCart.gameObject)}");
+                    
+                    // Dump its fields to the console
+                    Debugging.DumpFields(physGrabCart);
+                    
+                    // Register it for modifications
+                    CartPatch.RegisterCartComponent(physGrabCart, physGrabCart.gameObject);
+                    
+                    // Apply all modifications at once
+                    Logger.LogInfo("APPLYING ALL MODIFICATIONS AT ONCE!");
+                    
+                    // Boost speed
+                    CartPatch.BoostMultiplier = 5.0f;
+                    CartPatch.BoostAllCarts();
+                    
+                    // Enable fun modes
+                    CartPatch.ZeroGravityMode = true;
+                    CartPatch.ToggleZeroGravity();
+                    
+                    Logger.LogInfo("All modifications applied! Cart is ready to go!");
+                }
+                else
+                {
+                    Logger.LogInfo("No carts found in the scene at all. Try a different level!");
+                }
             }
-            
-            Logger.LogInfo("Started tracking potential cart objects. Movement will be logged every 5 seconds.");
-            Logger.LogInfo("Press F10 to stop tracking.");
         }
         
         // F10: Stop tracking cart objects
@@ -254,5 +288,91 @@ public class Plugin : BaseUnityPlugin
                 Logger.LogInfo("No object found under cursor");
             }
         }
+        
+        // F12: SUPER BOOST any registered carts
+        if (Input.GetKeyDown(KeyCode.F12))
+        {
+            Logger.LogInfo("=== SUPER BOOST ACTIVATED ===");
+            
+            // Double the normal boost multiplier for super boost
+            float originalMultiplier = CartPatch.BoostMultiplier;
+            CartPatch.BoostMultiplier = 10.0f;
+            
+            if (CartPatch.CartControllers.Count > 0)
+            {
+                Logger.LogInfo($"SUPER BOOSTING {CartPatch.CartControllers.Count} CARTS!");
+                CartPatch.BoostAllCarts();
+            }
+            else
+            {
+                Logger.LogInfo("No carts registered yet. Use F9 to find carts or F11 to register a cart under your cursor.");
+            }
+            
+            // Reset the multiplier after a delay
+            StartCoroutine(ResetBoostMultiplier(originalMultiplier, 5f));
+        }
+        
+        // 1: Toggle Zero Gravity mode for the cart
+        if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1))
+        {
+            if (CartPatch.CartControllers.Count > 0)
+            {
+                CartPatch.ToggleZeroGravity();
+                Logger.LogInfo("Zero Gravity mode toggled");
+            }
+            else
+            {
+                Logger.LogInfo("No carts registered yet. Find a cart first with F9 or F11.");
+            }
+        }
+        
+        // 2: Toggle Floaty Cart mode
+        if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2))
+        {
+            if (CartPatch.CartControllers.Count > 0)
+            {
+                CartPatch.ToggleFloatyCart();
+                Logger.LogInfo("Floaty Cart mode toggled");
+            }
+            else
+            {
+                Logger.LogInfo("No carts registered yet. Find a cart first with F9 or F11.");
+            }
+        }
+        
+        // 3: Toggle Super Grip mode
+        if (Input.GetKeyDown(KeyCode.Alpha3) || Input.GetKeyDown(KeyCode.Keypad3))
+        {
+            if (CartPatch.CartControllers.Count > 0)
+            {
+                CartPatch.ToggleSuperGrip();
+                Logger.LogInfo("Super Grip mode toggled");
+            }
+            else
+            {
+                Logger.LogInfo("No carts registered yet. Find a cart first with F9 or F11.");
+            }
+        }
+        
+        // 4: Toggle Slippery Cart mode
+        if (Input.GetKeyDown(KeyCode.Alpha4) || Input.GetKeyDown(KeyCode.Keypad4))
+        {
+            if (CartPatch.CartControllers.Count > 0)
+            {
+                CartPatch.ToggleSlipperyCart();
+                Logger.LogInfo("Slippery Cart mode toggled");
+            }
+            else
+            {
+                Logger.LogInfo("No carts registered yet. Find a cart first with F9 or F11.");
+            }
+        }
+    }
+    
+    private System.Collections.IEnumerator ResetBoostMultiplier(float originalValue, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        CartPatch.BoostMultiplier = originalValue;
+        Logger.LogInfo($"Boost multiplier reset to {originalValue}");
     }
 }

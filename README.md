@@ -9,6 +9,23 @@ A BepInEx plugin for modifying R.E.P.O. with a focus on cart-related modificatio
 3. Copy the compiled DLL to your `BepInEx/plugins` folder
 4. Launch the game
 
+## Cart Boosting Features
+
+This mod allows you to boost carts to extreme speeds:
+
+- **F9**: Detects carts in the scene and gives them a 5x velocity boost
+- **F11**: Point at a cart and press this to register it for boosting
+- **F12**: Super boost - gives any registered carts a 10x velocity boost
+
+## Cart Physics Modifications
+
+Once you've found a cart (using F9 or F11), you can toggle these special physics modes:
+
+- **1**: Toggle Zero Gravity mode - the cart floats and ignores gravity
+- **2**: Toggle Floaty Cart mode - the cart hovers slightly above the ground
+- **3**: Toggle Super Grip mode - the cart won't slide around corners
+- **4**: Toggle Slippery Cart mode - the cart slides like it's on ice
+
 ## Debugging Tools
 
 This mod includes several debugging tools to help you understand the game's structure and behavior:
@@ -19,18 +36,25 @@ This mod includes several debugging tools to help you understand the game's stru
 - **F6**: Dumps all loaded assemblies to help find game classes
 - **F7**: Attempts to find the player object and dumps its components, fields, and methods
 - **F8**: Lists all UI canvases and buttons in the scene
-- **F9**: Finds and tracks cart-like objects to identify the cart component
+- **F9**: Finds and tracks cart-like objects and boosts them (5x normal speed)
 - **F10**: Stops tracking cart objects
 - **F11**: Registers the cart component under your cursor for patching
+- **F12**: SUPER BOOST registered carts (10x normal speed)
+- **1-4**: Toggle various cart physics modifications
 
-### How to Find and Modify Carts
+### How to Use
 
 1. In the game, when you're near a cart, press **F9**
-2. The mod will search for objects with "cart", "vehicle", or "transport" in their names
-3. Move the cart around while the tracker is running
-4. The logger will identify objects that are moving and likely to be carts
-5. Once you've identified a cart, aim at it and press **F11** to register its components
-6. The mod will automatically attempt to patch the cart's behavior
+2. The mod will search for objects with "cart" in the name and boost them
+3. Once registered, use number keys 1-4 to toggle different physics modes
+4. Press F12 any time you want a super speed boost
+
+### Example Effects
+
+- Combine Zero Gravity (1) with a boost (F12) to make your cart fly off into the distance
+- Use Super Grip (3) to handle tight corners at high speeds
+- Enable Slippery Cart (4) for drift-like handling
+- Try Floaty Cart (2) to hover slightly above rough terrain
 
 ### How to Debug
 
