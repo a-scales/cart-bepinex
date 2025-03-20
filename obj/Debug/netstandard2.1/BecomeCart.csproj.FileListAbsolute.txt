@@ -1,0 +1,11 @@
+C:\Users\Andrew\Source\BeppinMods\BecomeCart\BecomeCart\obj\Debug\netstandard2.1\BecomeCart.csproj.AssemblyReference.cache
+C:\Users\Andrew\Source\BeppinMods\BecomeCart\BecomeCart\obj\Debug\netstandard2.1\MyPluginInfo.cs
+C:\Users\Andrew\Source\BeppinMods\BecomeCart\BecomeCart\obj\Debug\netstandard2.1\BecomeCart.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Andrew\Source\BeppinMods\BecomeCart\BecomeCart\obj\Debug\netstandard2.1\BecomeCart.AssemblyInfoInputs.cache
+C:\Users\Andrew\Source\BeppinMods\BecomeCart\BecomeCart\obj\Debug\netstandard2.1\BecomeCart.AssemblyInfo.cs
+C:\Users\Andrew\Source\BeppinMods\BecomeCart\BecomeCart\obj\Debug\netstandard2.1\BecomeCart.csproj.CoreCompileInputs.cache
+C:\Users\Andrew\Source\BeppinMods\BecomeCart\BecomeCart\bin\Debug\netstandard2.1\BecomeCart.deps.json
+C:\Users\Andrew\Source\BeppinMods\BecomeCart\BecomeCart\bin\Debug\netstandard2.1\BecomeCart.dll
+C:\Users\Andrew\Source\BeppinMods\BecomeCart\BecomeCart\bin\Debug\netstandard2.1\BecomeCart.pdb
+C:\Users\Andrew\Source\BeppinMods\BecomeCart\BecomeCart\obj\Debug\netstandard2.1\BecomeCart.dll
+C:\Users\Andrew\Source\BeppinMods\BecomeCart\BecomeCart\obj\Debug\netstandard2.1\BecomeCart.pdb
