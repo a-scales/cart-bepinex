@@ -131,10 +131,13 @@ public class Plugin : BaseUnityPlugin
             Logger.LogInfo($"Found {buttonComponents.Length} Button components");
         }
         
-        // F9: Find the Item Cart Medium and apply ALL modifications at once
+        // F9: Find the Item Cart Medium and REGISTER it (no mods)
         if (Input.GetKeyDown(KeyCode.F9))
         {
-            Logger.LogInfo("=== FINDING ITEM CART MEDIUM AND APPLYING ALL MODS ===");
+            Logger.LogInfo("=== FINDING ITEM CART MEDIUM AND REGISTERING IT ===");
+            
+            // Clear previous registrations to avoid confusion
+            CartPatch.CartControllers.Clear();
             
             // Look specifically for "Item Cart Medium" objects
             var cartObjects = GameObject.FindObjectsOfType<GameObject>()
@@ -147,7 +150,7 @@ public class Plugin : BaseUnityPlugin
                 Logger.LogInfo($"Found cart: {Debugging.GetGameObjectPath(cart)}");
                 
                 // Find the PhysGrabCart component
-                var physGrabCart = cart.GetComponent<MonoBehaviour>();
+                MonoBehaviour physGrabCart = null;
                 foreach (var component in cart.GetComponents<MonoBehaviour>())
                 {
                     if (component.GetType().Name == "PhysGrabCart")
@@ -162,21 +165,13 @@ public class Plugin : BaseUnityPlugin
                     // Dump its fields to the console
                     Debugging.DumpFields(physGrabCart);
                     
-                    // Register it for modifications
+                    // Register it for modifications but don't apply any mods
+                    Logger.LogInfo("Registering cart component for later modification...");
                     CartPatch.RegisterCartComponent(physGrabCart, cart);
                     
-                    // Apply all modifications at once
-                    Logger.LogInfo("APPLYING ALL MODIFICATIONS AT ONCE!");
-                    
-                    // Boost speed
-                    CartPatch.BoostMultiplier = 5.0f;
-                    CartPatch.BoostAllCarts();
-                    
-                    // Enable fun modes
-                    CartPatch.ZeroGravityMode = true;
-                    CartPatch.ToggleZeroGravity();
-                    
-                    Logger.LogInfo("All modifications applied! Cart is ready to go!");
+                    Logger.LogInfo($"Cart registered! Current cart count: {CartPatch.CartControllers.Count}");
+                    Logger.LogInfo("Press F10 to view the cart's complete hierarchy.");
+                    Logger.LogInfo("Press 1-4 to apply different physics modes, F12 for boost.");
                 }
                 else
                 {
@@ -198,21 +193,13 @@ public class Plugin : BaseUnityPlugin
                     // Dump its fields to the console
                     Debugging.DumpFields(physGrabCart);
                     
-                    // Register it for modifications
+                    // Register it for modifications but don't apply any mods
+                    Logger.LogInfo("Registering cart component for later modification...");
                     CartPatch.RegisterCartComponent(physGrabCart, physGrabCart.gameObject);
                     
-                    // Apply all modifications at once
-                    Logger.LogInfo("APPLYING ALL MODIFICATIONS AT ONCE!");
-                    
-                    // Boost speed
-                    CartPatch.BoostMultiplier = 5.0f;
-                    CartPatch.BoostAllCarts();
-                    
-                    // Enable fun modes
-                    CartPatch.ZeroGravityMode = true;
-                    CartPatch.ToggleZeroGravity();
-                    
-                    Logger.LogInfo("All modifications applied! Cart is ready to go!");
+                    Logger.LogInfo($"Cart registered! Current cart count: {CartPatch.CartControllers.Count}");
+                    Logger.LogInfo("Press F10 to view the cart's complete hierarchy.");
+                    Logger.LogInfo("Press 1-4 to apply different physics modes, F12 for boost.");
                 }
                 else
                 {
@@ -221,11 +208,114 @@ public class Plugin : BaseUnityPlugin
             }
         }
         
-        // F10: Stop tracking cart objects
+        // F10: Dump complete hierarchy of all registered carts
         if (Input.GetKeyDown(KeyCode.F10))
         {
-            CartTracker.Instance.StopTrackingAll();
-            Logger.LogInfo("Stopped tracking all cart objects");
+            Logger.LogInfo("=== DUMPING COMPLETE CART HIERARCHY ===");
+            
+            Logger.LogInfo($"Found Cart Components: {CartPatch.FoundCartComponents.Count}");
+            Logger.LogInfo($"Cart Controllers: {CartPatch.CartControllers.Count}");
+            
+            bool dumped = false;
+            
+            // First check cart controllers
+            if (CartPatch.CartControllers.Count > 0)
+            {
+                Logger.LogInfo("--- Dumping from CartControllers list ---");
+                foreach (var cartComponent in CartPatch.CartControllers)
+                {
+                    if (cartComponent == null || cartComponent.gameObject == null)
+                    {
+                        Logger.LogInfo("Found a null cart component or gameObject!");
+                        continue;
+                    }
+                    
+                    GameObject cartObj = cartComponent.gameObject;
+                    Logger.LogInfo($"Cart: {cartComponent.GetType().Name} on {cartObj.name}");
+                    
+                    // Dump parent hierarchy
+                    Transform parent = cartObj.transform.parent;
+                    if (parent != null)
+                    {
+                        Logger.LogInfo("=== PARENT HIERARCHY ===");
+                        while (parent != null)
+                        {
+                            Logger.LogInfo($"Parent: {parent.name}");
+                            // Dump components on parent
+                            foreach (var comp in parent.GetComponents<Component>())
+                            {
+                                if (comp != null)
+                                {
+                                    Logger.LogInfo($"  Component: {comp.GetType().Name}");
+                                }
+                            }
+                            parent = parent.parent;
+                        }
+                    }
+                    else
+                    {
+                        Logger.LogInfo("This cart has no parent objects.");
+                    }
+                    
+                    // Dump children recursively with more detail
+                    Logger.LogInfo("=== CHILD HIERARCHY ===");
+                    DumpGameObjectAndComponents(cartObj, 0);
+                    
+                    dumped = true;
+                }
+            }
+            
+            // If we didn't find any in CartControllers, check FoundCartComponents as fallback
+            if (!dumped && CartPatch.FoundCartComponents.Count > 0)
+            {
+                Logger.LogInfo("--- Dumping from FoundCartComponents list ---");
+                foreach (var cartComponent in CartPatch.FoundCartComponents)
+                {
+                    if (cartComponent == null || cartComponent.gameObject == null)
+                    {
+                        Logger.LogInfo("Found a null cart component or gameObject!");
+                        continue;
+                    }
+                    
+                    GameObject cartObj = cartComponent.gameObject;
+                    Logger.LogInfo($"Cart: {cartComponent.GetType().Name} on {cartObj.name}");
+                    
+                    // Dump children recursively with more detail
+                    Logger.LogInfo("=== OBJECT HIERARCHY ===");
+                    DumpGameObjectAndComponents(cartObj, 0);
+                    
+                    dumped = true;
+                }
+            }
+            
+            // Final fallback - try to find by name if registration failed
+            if (!dumped)
+            {
+                Logger.LogInfo("No registered carts found. Trying direct search for Item Cart Medium...");
+                var cartObjects = GameObject.FindObjectsOfType<GameObject>()
+                    .Where(obj => obj.name.Contains("Item Cart Medium"))
+                    .ToArray();
+                    
+                if (cartObjects.Length > 0)
+                {
+                    Logger.LogInfo($"Found {cartObjects.Length} cart objects by name.");
+                    foreach (var cart in cartObjects)
+                    {
+                        Logger.LogInfo($"Cart: {Debugging.GetGameObjectPath(cart)}");
+                        DumpGameObjectAndComponents(cart, 0);
+                        dumped = true;
+                    }
+                }
+                else
+                {
+                    Logger.LogInfo("No carts found by name either. Try F9 first to register a cart.");
+                }
+            }
+            
+            if (!dumped)
+            {
+                Logger.LogInfo("No carts registered or found. Use F9 first to find and register a cart.");
+            }
         }
         
         // F11: Manually register a cart component under the cursor
@@ -374,5 +464,75 @@ public class Plugin : BaseUnityPlugin
         yield return new WaitForSeconds(delay);
         CartPatch.BoostMultiplier = originalValue;
         Logger.LogInfo($"Boost multiplier reset to {originalValue}");
+    }
+    
+    // Helper method to dump a game object and all its components with more detail
+    private void DumpGameObjectAndComponents(GameObject obj, int depth)
+    {
+        if (obj == null) return;
+        
+        string indent = new string(' ', depth * 2);
+        Logger.LogInfo($"{indent}GameObject: {obj.name}, Active: {obj.activeSelf}, Layer: {LayerMask.LayerToName(obj.layer)}");
+        
+        // Log more detailed component info
+        Component[] components = obj.GetComponents<Component>();
+        foreach (Component component in components)
+        {
+            if (component == null) continue;
+            
+            string typeName = component.GetType().Name;
+            Logger.LogInfo($"{indent}  Component: {typeName}");
+            
+            // Dump important component details based on type
+            if (component is Collider collider)
+            {
+                Logger.LogInfo($"{indent}    Collider: isTrigger={collider.isTrigger}, enabled={collider.enabled}");
+                if (collider is BoxCollider box)
+                {
+                    Logger.LogInfo($"{indent}    BoxCollider size: {box.size}, center: {box.center}");
+                }
+                else if (collider is SphereCollider sphere)
+                {
+                    Logger.LogInfo($"{indent}    SphereCollider radius: {sphere.radius}, center: {sphere.center}");
+                }
+                else if (collider is CapsuleCollider capsule)
+                {
+                    Logger.LogInfo($"{indent}    CapsuleCollider radius: {capsule.radius}, height: {capsule.height}");
+                }
+            }
+            else if (component is Rigidbody rb)
+            {
+                Logger.LogInfo($"{indent}    Rigidbody: mass={rb.mass}, drag={rb.drag}, useGravity={rb.useGravity}");
+                Logger.LogInfo($"{indent}    Velocity: {rb.velocity}, AngularVelocity: {rb.angularVelocity}");
+            }
+            else if (component is MeshRenderer renderer)
+            {
+                Material[] materials = renderer.materials;
+                Logger.LogInfo($"{indent}    MeshRenderer: isVisible={renderer.isVisible}, materialCount={materials.Length}");
+                foreach (Material mat in materials)
+                {
+                    if (mat != null)
+                    {
+                        Logger.LogInfo($"{indent}      Material: {mat.name}, shader: {mat.shader.name}");
+                    }
+                }
+            }
+            else if (typeName.Contains("PhysGrab") || typeName.Contains("Cart") || typeName.Contains("Vehicle"))
+            {
+                // Dump fields for interesting components
+                Debugging.DumpFields(component);
+            }
+        }
+        
+        // Recursively log children with more depth
+        if (obj.transform.childCount > 0)
+        {
+            Logger.LogInfo($"{indent}  Children ({obj.transform.childCount}):");
+            for (int i = 0; i < obj.transform.childCount; i++)
+            {
+                Transform child = obj.transform.GetChild(i);
+                DumpGameObjectAndComponents(child.gameObject, depth + 1);
+            }
+        }
     }
 }

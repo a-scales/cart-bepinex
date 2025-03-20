@@ -47,7 +47,16 @@ namespace BecomeCart
                 if (!CartControllers.Contains(cartComponent))
                 {
                     CartControllers.Add(cartComponent);
-                    Plugin.Logger.LogInfo($"Found a PhysGrabCart component! Ready to modify!");
+                    Plugin.Logger.LogInfo($"Found a PhysGrabCart component! Ready to modify! Total carts: {CartControllers.Count}");
+                }
+            }
+            else
+            {
+                // If it's not a PhysGrabCart but has "Cart" in the name, also add it
+                if (cartComponent.GetType().Name.Contains("Cart") && !CartControllers.Contains(cartComponent))
+                {
+                    CartControllers.Add(cartComponent);
+                    Plugin.Logger.LogInfo($"Found a cart-like component: {cartComponent.GetType().Name}. Total carts: {CartControllers.Count}");
                 }
             }
             

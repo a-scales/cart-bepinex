@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("BecomeCart")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+69ea4799a3b284f97e0e436712aeeea770946fa5")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b875e71e300173c80d242689655b9dcd97416a3b")]
 [assembly: System.Reflection.AssemblyProductAttribute("My first plugin")]
 [assembly: System.Reflection.AssemblyTitleAttribute("BecomeCart")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
