@@ -16,10 +16,13 @@ This mod allows you to transform into a cart in the game:
 - Press **F3** to swap your player model with a cart
   - Makes you look like a cart while retaining player controls
   - Automatically finds and uses available carts in the scene
-  - Switches to third-person camera view to see yourself as a cart!
+  - Switches to third-person view with the camera positioned just above and behind the cart
   - Properly positions the cart model to match player movement
   - Player is made immune to damage while in cart form
-  - Improved vehicle-like WASD/Arrow controls with turning and physics
+  - Improved vehicle-like controls:
+    - **Mouse**: Turn the cart left/right
+    - **W/S**: Move forward/backward
+    - **A/D**: Strafe left/right (sideways movement)
 
 - Press **F4** to restore your normal player model
   - Removes the cart model and restores your regular appearance
@@ -36,5 +39,5 @@ This mod allows you to transform into a cart in the game:
 
 1. In the game, when you're near a cart, press **F3**
 2. The mod will swap your player model with a cart
-3. Use WASD to control the cart
+3. Use mouse to steer, W/S to drive forward/backward, and A/D to strafe left/right
 4. Press F4 any time you want to return to normal 

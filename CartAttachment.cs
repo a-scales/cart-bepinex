@@ -62,9 +62,9 @@ namespace BecomeCart
                     
                     // Then parent the camera to the cart for a third-person view
                     mainCamera.transform.parent = cartObject.transform;
-                    mainCamera.transform.localPosition = new Vector3(0, 3f, -4f);
-                    mainCamera.transform.localRotation = Quaternion.Euler(20f, 0, 0);
-                    Logger.LogInfo("Positioned camera behind cart");
+                    mainCamera.transform.localPosition = new Vector3(0, 1.5f, -2f);
+                    mainCamera.transform.localRotation = Quaternion.Euler(15f, 0, 0);
+                    Logger.LogInfo("Positioned camera closer behind cart");
                 }
                 
                 // 3. Capture important cart components

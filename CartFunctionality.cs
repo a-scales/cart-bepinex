@@ -70,21 +70,23 @@ namespace BecomeCart
             cartRb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
             
             // Movement parameters
-            float forwardSpeed = 15.0f;
-            float reverseSpeed = 7.0f;
+            float forwardSpeed = 11.25f;  // 15.0f reduced by 25%
+            float reverseSpeed = 5.25f;   // 7.0f reduced by 25%
             float turnSpeed = 100.0f;
+            float strafeSpeed = 9.0f;     // New parameter for strafing
             float stabilizationForce = 5.0f;
             
             // Main control loop
             while (_lastPlayerSwap != null && cartObject != null)
             {
                 // Get input from WASD or arrow keys
-                float horizontalInput = Input.GetAxis("Horizontal"); // A/D or arrow left/right
-                float verticalInput = Input.GetAxis("Vertical");     // W/S or arrow up/down
+                float horizontalInput = Input.GetAxis("Horizontal"); // A/D for strafing left/right
+                float verticalInput = Input.GetAxis("Vertical");     // W/S for forward/backward
+                float mouseX = Input.GetAxis("Mouse X") * 2.0f;      // Mouse for turning
                 
-                if (Mathf.Abs(horizontalInput) > 0.1f || Mathf.Abs(verticalInput) > 0.1f)
+                if (Mathf.Abs(verticalInput) > 0.1f)
                 {
-                    Logger.LogDebug($"Cart input: H={horizontalInput:F2}, V={verticalInput:F2}");
+                    Logger.LogDebug($"Cart input: V={verticalInput:F2}");
                     
                     // Get the cart's forward direction
                     Vector3 forwardDirection = cartObject.transform.forward;
@@ -95,15 +97,25 @@ namespace BecomeCart
                     // Apply forward/backward movement force
                     Vector3 moveForce = forwardDirection * verticalInput * currentSpeed;
                     cartRb.AddForce(moveForce, ForceMode.Acceleration);
+                }
+                
+                // Handle mouse turning
+                if (Mathf.Abs(mouseX) > 0.1f)
+                {
+                    cartObject.transform.Rotate(0, mouseX, 0);
+                }
+                
+                // Handle strafing with A/D keys
+                if (Mathf.Abs(horizontalInput) > 0.1f)
+                {
+                    Logger.LogDebug($"Cart strafe: H={horizontalInput:F2}");
                     
-                    // Apply turning torque
-                    float turnAmount = horizontalInput * turnSpeed * Time.deltaTime;
-                    Vector3 turnTorque = Vector3.up * turnAmount;
-                    cartRb.AddTorque(turnTorque, ForceMode.VelocityChange);
+                    // Get the cart's right direction for strafing
+                    Vector3 rightDirection = cartObject.transform.right;
                     
-                    // Log current movement
-                    Logger.LogDebug($"Cart pos: {cartObject.transform.position}, vel: {cartRb.velocity.magnitude:F2}, " +
-                                   $"force: {moveForce.magnitude:F2}, torque: {turnAmount:F2}");
+                    // Apply strafing force
+                    Vector3 strafeForce = rightDirection * horizontalInput * strafeSpeed;
+                    cartRb.AddForce(strafeForce, ForceMode.Acceleration);
                 }
                 
                 // Stabilization: Apply upward force to prevent tipping

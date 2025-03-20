@@ -9,3 +9,4 @@ C:\Users\Andrew\Source\BeppinMods\BecomeCart\BecomeCart\bin\Debug\netstandard2.1
 C:\Users\Andrew\Source\BeppinMods\BecomeCart\BecomeCart\bin\Debug\netstandard2.1\BecomeCart.pdb
 C:\Users\Andrew\Source\BeppinMods\BecomeCart\BecomeCart\obj\Debug\netstandard2.1\BecomeCart.dll
 C:\Users\Andrew\Source\BeppinMods\BecomeCart\BecomeCart\obj\Debug\netstandard2.1\BecomeCart.pdb
+C:\Users\Andrew\Source\BeppinMods\BecomeCart\BecomeCart\obj\Debug\netstandard2.1\BecomeCart.sourcelink.json

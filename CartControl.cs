@@ -14,6 +14,7 @@ namespace BecomeCart
         private Vector3 _lastCartMoveDirection = Vector3.zero;
         private Rigidbody _cartRigidbody;
         private Component _physGrabCart;
+        private float _mouseSensitivity = 2.0f; // Mouse turning sensitivity
 
         /// <summary>
         /// Updates cart control with WASD input when player is swapped with cart
@@ -25,40 +26,60 @@ namespace BecomeCart
             try
             {
                 // Calculate movement direction from input
-                float horizontal = Input.GetAxis("Horizontal");
-                float vertical = Input.GetAxis("Vertical");
+                float horizontal = Input.GetAxis("Horizontal"); // For strafing left/right
+                float vertical = Input.GetAxis("Vertical"); // For forward/backward movement
                 
-                // Check for any movement input
-                if (Mathf.Abs(horizontal) > 0.1f || Mathf.Abs(vertical) > 0.1f)
+                // Get mouse input for turning
+                float mouseX = Input.GetAxis("Mouse X") * _mouseSensitivity;
+                
+                // Get camera for reference
+                Camera mainCamera = Camera.main;
+                if (mainCamera == null) return;
+                
+                // Get camera's forward and right directions for movement relative to camera
+                Vector3 cameraForward = mainCamera.transform.forward;
+                Vector3 cameraRight = mainCamera.transform.right;
+                
+                // Project camera directions onto XZ plane (ignore Y component for flat movement)
+                cameraForward.y = 0;
+                cameraRight.y = 0;
+                cameraForward.Normalize();
+                cameraRight.Normalize();
+                
+                if (_cartRigidbody != null)
                 {
-                    // Get camera's forward and right directions for movement relative to camera
-                    Camera mainCamera = Camera.main;
-                    if (mainCamera == null) return;
-                    
-                    Vector3 cameraForward = mainCamera.transform.forward;
-                    Vector3 cameraRight = mainCamera.transform.right;
-                    
-                    // Project camera directions onto XZ plane (ignore Y component for flat movement)
-                    cameraForward.y = 0;
-                    cameraRight.y = 0;
-                    cameraForward.Normalize();
-                    cameraRight.Normalize();
-                    
-                    // Combine directions based on input
-                    Vector3 moveDirection = (cameraForward * vertical + cameraRight * horizontal).normalized;
-                    _lastCartMoveDirection = moveDirection;
-                    
-                    // Apply force to cart based on movement direction
-                    if (_cartRigidbody != null)
+                    // Apply mouse turning (rotate the cart based on mouse X)
+                    if (Mathf.Abs(mouseX) > 0.1f)
                     {
-                        _cartRigidbody.AddForce(moveDirection * _cartMoveSpeed, ForceMode.Acceleration);
+                        Quaternion rotation = Quaternion.Euler(0, mouseX, 0);
+                        _cartRigidbody.MoveRotation(_cartRigidbody.rotation * rotation);
                         
-                        // Rotate cart to face movement direction
-                        if (moveDirection != Vector3.zero)
-                        {
-                            Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
-                            _cartRigidbody.MoveRotation(Quaternion.Slerp(_cartRigidbody.rotation, targetRotation, Time.deltaTime * _cartRotateSpeed * 0.1f));
-                        }
+                        // Update forward direction based on new rotation
+                        cameraForward = _cartRigidbody.transform.forward;
+                        cameraForward.y = 0;
+                        cameraForward.Normalize();
+                        
+                        // Update right direction based on new rotation
+                        cameraRight = _cartRigidbody.transform.right;
+                        cameraRight.y = 0;
+                        cameraRight.Normalize();
+                    }
+                    
+                    // Handle movement input
+                    if (Mathf.Abs(vertical) > 0.1f)
+                    {
+                        // Forward/backward movement (along cart's forward direction)
+                        Vector3 moveDirection = cameraForward * vertical;
+                        _cartRigidbody.AddForce(moveDirection * (_cartMoveSpeed * 0.75f), ForceMode.Acceleration); // Reduced by 25%
+                        _lastCartMoveDirection = moveDirection;
+                    }
+                    
+                    // Handle strafing left/right (A/D keys)
+                    if (Mathf.Abs(horizontal) > 0.1f)
+                    {
+                        // Strafe left/right (along cart's right direction)
+                        Vector3 strafeDirection = cameraRight * horizontal;
+                        _cartRigidbody.AddForce(strafeDirection * (_cartMoveSpeed * 0.75f * 0.8f), ForceMode.Acceleration); // Further reduced for strafing
                     }
                 }
                 
@@ -136,11 +157,12 @@ namespace BecomeCart
                     _cartRigidbody.isKinematic = false;
                     _cartRigidbody.angularDrag = 10; // Higher angular drag for stability
                     
-                    // Make cart more responsive to input
-                    _cartMoveSpeed = 10f;
+                    // Make cart more responsive to input but 25% slower
+                    _cartMoveSpeed = 7.5f; // Original was 10f, reduced by 25%
                     _cartRotateSpeed = 120f;
                     
                     Logger.LogInfo("Cart control initialized successfully");
+                    Logger.LogInfo("Use mouse to turn the cart, WASD to move (A/D now strafe left/right)");
                 }
             }
             catch (Exception ex)
