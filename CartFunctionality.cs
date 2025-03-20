@@ -16,6 +16,9 @@ namespace BecomeCart
         private Component _playerDamageHandler = null;
         private PlayerCartSwap _lastPlayerSwap;
         private GameObject _lastFoundCart;
+        
+        // Storage for remote players that have been visually swapped with carts
+        private Dictionary<GameObject, RemotePlayerCartInfo> _remotePlayerCarts = new Dictionary<GameObject, RemotePlayerCartInfo>();
 
         /// <summary>
         /// Represents data needed to restore the player after cart swap
@@ -41,6 +44,15 @@ namespace BecomeCart
             public bool PlayerRbWasKinematic;
             public Component PlayerDamageHandler;
             public int OriginalPlayerLayer;
+        }
+        
+        /// <summary>
+        /// Represents data needed for remote player cart visualization
+        /// </summary>
+        private class RemotePlayerCartInfo
+        {
+            public GameObject CartObject;
+            public Dictionary<string, bool> OriginalPlayerVisibility;
         }
 
         /// <summary>

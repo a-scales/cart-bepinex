@@ -280,11 +280,13 @@ namespace BecomeCart
             {
                 Logger.LogInfo("Restoring player from cart mode...");
                 
+                // Store reference to player object before we clear _lastPlayerSwap
+                GameObject playerObject = _lastPlayerSwap.PlayerObject;
+                
                 // 1. Stop cart control
                 StopCartControl();
                 
                 // 2. Restore player position and rotation
-                GameObject playerObject = _lastPlayerSwap.PlayerObject;
                 if (playerObject != null)
                 {
                     // Restore transform
@@ -347,6 +349,12 @@ namespace BecomeCart
                 _lastPlayerSwap = null;
                 _playerVisibilityState.Clear();
                 _savedCartCollisionSettings.Clear();
+                
+                // 6. Send network event to inform others
+                if (playerObject != null)
+                {
+                    NetworkManager.Instance.SendPlayerCartRestore(playerObject);
+                }
                 
                 Logger.LogInfo("Successfully restored player from cart mode");
             }

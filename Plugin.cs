@@ -29,9 +29,13 @@ namespace BecomeCart
             {
                 Harmony.PatchAll();
                 Logger.LogInfo($"Plugin BecomeCart is loaded!");
-                Logger.LogInfo("Press F3 to swap the player model with a cart model");
+                Logger.LogInfo("Press F3 to swap the player model with a cart");
                 Logger.LogInfo("Press F4 to restore the player model back from cart form");
                 Logger.LogInfo("Press F5 to toggle player model visibility");
+                
+                // Initialize NetworkManager for multiplayer synchronization
+                NetworkManager.Instance.name = "BecomeCartNetworkManager";
+                Logger.LogInfo("Initialized network manager for multiplayer synchronization");
             }
             catch (Exception ex)
             {

@@ -157,7 +157,13 @@ namespace BecomeCart
                 // 8. Create a temporary floor collider if needed to prevent falling through
                 CreateTemporaryFloorCollider(cartObject);
                 
-                Logger.LogInfo("Now driving the cart! Use WASD to control it like a car.");
+                // 9. Send network event to other players
+                NetworkManager.Instance.SendPlayerCartSwap(playerObject, cartObject);
+                
+                // 10. Transfer ownership of the cart to the local player for physics sync
+                NetworkManager.Instance.TransferCartOwnership(cartObject);
+                
+                Logger.LogInfo("Now driving the cart! Use mouse to turn, W/S for forward/back, A/D to strafe.");
                 Logger.LogInfo($"Player is {(_playerDamageImmune ? "immune to damage" : "vulnerable to damage")}");
                 Logger.LogInfo($"Player model is {(_debugShowPlayerModel ? "visible (debug mode)" : "hidden")}");
                 Logger.LogInfo("Press F5 to toggle player model visibility");
@@ -166,6 +172,121 @@ namespace BecomeCart
             {
                 Logger.LogError($"Error during player-cart attachment: {ex.Message}\n{ex.StackTrace}");
             }
+        }
+
+        /// <summary>
+        /// Internal implementation of visual attachment for remote players
+        /// This is the implementation that NetworkManager should call
+        /// </summary>
+        public void AttachPlayerToCartVisuallyInternal(GameObject playerObject, GameObject cartObject)
+        {
+            if (playerObject == null || cartObject == null)
+                return;
+                
+            Logger.LogInfo($"Visually attaching remote player {Debugging.GetGameObjectPath(playerObject)} to cart {Debugging.GetGameObjectPath(cartObject)}");
+            
+            try
+            {
+                // Store player-cart mapping for restoration later
+                _remotePlayerCarts[playerObject] = new RemotePlayerCartInfo
+                {
+                    CartObject = cartObject,
+                    OriginalPlayerVisibility = new Dictionary<string, bool>()
+                };
+                
+                // Make the player invisible
+                Renderer[] renderers = playerObject.GetComponentsInChildren<Renderer>();
+                foreach (Renderer renderer in renderers)
+                {
+                    if (renderer == null) continue;
+                    
+                    string path = Debugging.GetGameObjectPath(renderer.gameObject);
+                    
+                    // Store current state
+                    _remotePlayerCarts[playerObject].OriginalPlayerVisibility[path] = renderer.enabled;
+                    
+                    // Hide the renderer
+                    renderer.enabled = false;
+                }
+                
+                // Position the player at the cart
+                playerObject.transform.position = cartObject.transform.position + Vector3.up * 0.5f;
+                
+                // Note: We do not:
+                // - Change camera position (as this is a remote player)
+                // - Disable player control components (they're already controlled by the network)
+                // - Create floor colliders or initialize cart control
+                
+                Logger.LogInfo($"Remote player {Debugging.GetGameObjectPath(playerObject)} is now visually a cart");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error during remote player-cart visual attachment: {ex.Message}\n{ex.StackTrace}");
+            }
+        }
+        
+        /// <summary>
+        /// Internal implementation of visual restoration for remote players
+        /// This is the implementation that NetworkManager should call
+        /// </summary>
+        public void RestorePlayerFromCartVisuallyInternal(GameObject playerObject)
+        {
+            if (playerObject == null || !_remotePlayerCarts.ContainsKey(playerObject))
+                return;
+                
+            Logger.LogInfo($"Visually restoring remote player {Debugging.GetGameObjectPath(playerObject)} from cart");
+            
+            try
+            {
+                // Restore player visibility
+                RemotePlayerCartInfo info = _remotePlayerCarts[playerObject];
+                
+                foreach (Renderer renderer in playerObject.GetComponentsInChildren<Renderer>())
+                {
+                    if (renderer == null) continue;
+                    
+                    string path = Debugging.GetGameObjectPath(renderer.gameObject);
+                    
+                    if (info.OriginalPlayerVisibility.ContainsKey(path))
+                    {
+                        renderer.enabled = info.OriginalPlayerVisibility[path];
+                    }
+                    else
+                    {
+                        // Default to visible if we don't have stored state
+                        renderer.enabled = true;
+                    }
+                }
+                
+                // Remove from our tracking
+                _remotePlayerCarts.Remove(playerObject);
+                
+                Logger.LogInfo($"Remote player {Debugging.GetGameObjectPath(playerObject)} visual state restored");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error restoring remote player visual state: {ex.Message}\n{ex.StackTrace}");
+            }
+        }
+
+        /// <summary>
+        /// Public method to attach a player to a cart visually for network synchronization
+        /// Used by NetworkManager when a remote player becomes a cart
+        /// </summary>
+        public void AttachPlayerToCartVisually(GameObject playerObject, GameObject cartObject)
+        {
+            // Call the internal implementation
+            AttachPlayerToCartVisuallyInternal(playerObject, cartObject);
+        }
+        
+        /// <summary>
+        /// Public method to restore a player's visual state for network synchronization
+        /// Used by NetworkManager when a remote player stops being a cart
+        /// </summary>
+        public void RestorePlayerFromCartVisually(GameObject playerObject)
+        {
+            // Call the internal implementation
+            RestorePlayerFromCartVisuallyInternal(playerObject);
         }
 
         /// <summary>

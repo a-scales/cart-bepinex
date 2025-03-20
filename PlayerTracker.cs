@@ -33,6 +33,12 @@ public class PlayerTracker
     // Local player reference
     private GameObject _localPlayer;
     
+    // Dictionary mapping player GameObjects to their Photon actor numbers
+    private Dictionary<GameObject, int> _playerActorNumbers = new Dictionary<GameObject, int>();
+    
+    // Dictionary mapping Photon actor numbers to player GameObjects
+    private Dictionary<int, GameObject> _actorNumberToPlayer = new Dictionary<int, GameObject>();
+    
     // Public property to access local player
     public GameObject LocalPlayer => _localPlayer;
     
@@ -59,7 +65,58 @@ public class PlayerTracker
                 _localPlayer = player;
                 Plugin.Logger.LogInfo($"Set as local player: {Debugging.GetGameObjectPath(player)}");
             }
+            
+            // Try to find PhotonView and get actor number
+            MonoBehaviour photonView = player.GetComponentInChildren<MonoBehaviour>();
+            if (photonView != null && photonView.GetType().Name == "PhotonView")
+            {
+                try
+                {
+                    // Use reflection to get OwnerActorNr
+                    FieldInfo ownerActorNrField = photonView.GetType().GetField("ownerActorNr", 
+                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                        
+                    if (ownerActorNrField != null)
+                    {
+                        int actorNumber = (int)ownerActorNrField.GetValue(photonView);
+                        _playerActorNumbers[player] = actorNumber;
+                        _actorNumberToPlayer[actorNumber] = player;
+                        
+                        Plugin.Logger.LogInfo($"Player {Debugging.GetGameObjectPath(player)} has Photon actor number: {actorNumber}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Plugin.Logger.LogError($"Error getting PhotonView actor number: {ex.Message}");
+                }
+            }
         }
+    }
+    
+    /// <summary>
+    /// Gets the Photon actor number for a player
+    /// </summary>
+    /// <param name="player">The player GameObject</param>
+    /// <returns>The actor number or -1 if not found</returns>
+    public int GetPlayerActorNumber(GameObject player)
+    {
+        if (player == null || !_playerActorNumbers.ContainsKey(player))
+            return -1;
+            
+        return _playerActorNumbers[player];
+    }
+    
+    /// <summary>
+    /// Gets a player by their Photon actor number
+    /// </summary>
+    /// <param name="actorNumber">The actor number to look for</param>
+    /// <returns>The player GameObject or null if not found</returns>
+    public GameObject GetPlayerByActorNumber(int actorNumber)
+    {
+        if (_actorNumberToPlayer.ContainsKey(actorNumber))
+            return _actorNumberToPlayer[actorNumber];
+            
+        return null;
     }
     
     /// <summary>
@@ -77,6 +134,8 @@ public class PlayerTracker
     {
         _trackedPlayers.Clear();
         _localPlayer = null;
+        _playerActorNumbers.Clear();
+        _actorNumberToPlayer.Clear();
         Plugin.Logger.LogInfo("Cleared all tracked players");
     }
 } 
