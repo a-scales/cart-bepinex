@@ -9,6 +9,24 @@ A BepInEx plugin for modifying R.E.P.O. with a focus on cart-related modificatio
 3. Copy the compiled DLL to your `BepInEx/plugins` folder
 4. Launch the game
 
+## Become A Cart!
+
+The newest feature lets you actually become a cart:
+
+- Press **F3** to swap your player model with a cart
+  - Makes you look like a cart while retaining player controls
+  - Automatically finds and uses available carts in the scene
+  - Switches to third-person camera view to see yourself as a cart!
+  - Properly positions the cart model to match player movement
+  - Includes detailed debugging information to verify everything works
+
+- Press **F4** to restore your normal player model
+  - Removes the cart model and restores your regular appearance
+  - Switches back to your original first-person view
+  - Maintains your position and orientation
+
+For best results, use F9 to find carts first before attempting to become one!
+
 ## Cart Boosting Features
 
 This mod allows you to boost carts to extreme speeds:
@@ -25,6 +43,27 @@ Once you've found a cart (using F9 or F11), you can toggle these special physics
 - **2**: Toggle Floaty Cart mode - the cart hovers slightly above the ground
 - **3**: Toggle Super Grip mode - the cart won't slide around corners
 - **4**: Toggle Slippery Cart mode - the cart slides like it's on ice
+
+## Player Tracking Features
+
+The mod now includes functionality to track and analyze players in the game:
+
+- Press **F11** to find and track all connected players
+  - Uses PhotonNetwork to identify all players in the current session
+  - Attempts to find their GameObject representations in the scene
+  - Tracks their positions and component details
+
+- Press **F12** to dump detailed player information to a file
+  - Creates a `player_details.md` file with comprehensive data
+  - Includes player ID, name, position, and components
+  - Lists all children GameObjects and their components
+
+Player tracking helps understand:
+- How many players are connected to your session
+- What components make up a player character
+- How players are represented in the game world
+
+This functionality is particularly useful for multiplayer games and understanding player interactions in the game world.
 
 ## Debugging Tools
 

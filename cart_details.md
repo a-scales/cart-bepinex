@@ -1,3 +1,23 @@
+## Cart Summary
+- **Basic Identification**: Medium-sized cart with physics-based interactions
+- **Control Methods**:
+  - Basic grabbing via PhysGrabObject component
+  - Enhanced control through dedicated Cart Handle and Cart Grab Point
+  - State system (currently "Locked") controls behavior modes
+- **Item Management**:
+  - PhysGrabInCart component tracks items inside the cart
+  - Collider system keeps items contained
+  - Display shows current haul value
+- **Physics Properties**:
+  - Mass: 2, Drag: 2, Angular Drag: 4
+  - Multiple specialized physics materials for different situations
+  - Stabilization force (100) helps maintain balance
+  - Three capsule colliders configured as wheels for movement
+- **Visual Feedback**:
+  - Screen with TextMeshPro display shows information
+  - Handle system provides visual indicators for interaction
+  - Particle effects for impacts and movement
+
 [Info   :BecomeCart] Cart: Level Generator/Items/Item Cart Medium(Clone)
 [Info   :BecomeCart] GameObject: Item Cart Medium(Clone), Active: True, Layer: PhysGrabObject
 [Info   :BecomeCart]   Component: Transform
