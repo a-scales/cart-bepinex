@@ -36,6 +36,9 @@ namespace BecomeCart
                 Logger.LogInfo("Press F3 to swap the player model with a cart model");
                 Logger.LogInfo("Press F4 to restore the player model back from cart form");
                 Logger.LogInfo("Press F5 to toggle player model visibility");
+                
+                // Try to find players on startup
+                FindAndTrackAllPlayers();
             }
             catch (Exception ex)
             {
@@ -102,6 +105,12 @@ namespace BecomeCart
                             }
                         }
                     }
+                }
+                
+                // Update cart control if active
+                if (_isControllingCart && _lastPlayerSwap != null)
+                {
+                    UpdateCartControl();
                 }
             }
             catch (Exception ex)

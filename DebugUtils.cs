@@ -9,9 +9,6 @@ namespace BecomeCart
 {
     public partial class Plugin
     {
-        // Track the last found cart for detailed inspection
-        private GameObject _lastFoundCart;
-        
         /// <summary>
         /// Dumps game object information to logs or file
         /// </summary>
@@ -53,8 +50,8 @@ namespace BecomeCart
                     {
                         // Look for objects with cart-related components or naming
                         if (obj.name.Contains("Cart") || 
-                            HasComponent(obj, "PhysGrabCart") || 
-                            HasComponent(obj, "CartController"))
+                            ComponentUtility.HasComponentByName(obj, "PhysGrabCart") || 
+                            ComponentUtility.HasComponentByName(obj, "CartController"))
                         {
                             carts.Add(obj);
                             Logger.LogInfo($"Found cart: {Debugging.GetGameObjectPath(obj)}");
@@ -92,22 +89,6 @@ namespace BecomeCart
             {
                 Logger.LogError($"Error during cart details processing: {ex.Message}\n{ex.StackTrace}");
             }
-        }
-        
-        /// <summary>
-        /// Checks if a GameObject has a component with the given name
-        /// </summary>
-        private bool HasComponent(GameObject obj, string componentName)
-        {
-            Component[] components = obj.GetComponents<Component>();
-            foreach (Component comp in components)
-            {
-                if (comp != null && comp.GetType().Name.Contains(componentName))
-                {
-                    return true;
-                }
-            }
-            return false;
         }
         
         /// <summary>

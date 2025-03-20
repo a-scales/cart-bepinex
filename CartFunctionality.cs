@@ -46,7 +46,7 @@ namespace BecomeCart
         /// <summary>
         /// Coroutine to handle cart control and movement
         /// </summary>
-        private IEnumerator UpdateCartControl()
+        private IEnumerator CartCoroutineControl()
         {
             if (_lastPlayerSwap == null || _lastPlayerSwap.CartObject == null)
                 yield break;
